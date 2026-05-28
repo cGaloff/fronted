@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card } from "../components/ui/Card";
 import { Toast } from "../components/ui/Toast";
-import { Calendar } from "lucide-react";
+import { Calendar, Sparkles } from "lucide-react";
 
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -31,8 +31,8 @@ export function AuthPage() {
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
-        setToast({ message: "Bienvenido", type: "success" });
-        setTimeout(() => navigate("/"), 1500);
+        setToast({ message: "¡Bienvenido de nuevo!", type: "success" });
+        setTimeout(() => navigate("/"), 1200);
       } else {
         await register(
           formData.firstName,
@@ -40,7 +40,7 @@ export function AuthPage() {
           formData.email,
           formData.password
         );
-        setToast({ message: "Registro exitoso. Por favor inicia sesión.", type: "success" });
+        setToast({ message: "Registro exitoso. Inicia sesión con tus credenciales.", type: "success" });
         setIsLogin(true);
         setFormData({ firstName: "", lastName: "", email: "", password: "" });
       }
@@ -51,9 +51,13 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-mesh-gradient flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative Blur Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 rounded-full bg-indigo-300/10 blur-3xl animate-pulse-subtle"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 rounded-full bg-purple-300/10 blur-3xl animate-pulse-subtle" style={{ animationDelay: '1s' }}></div>
+
       {toast && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm">
+        <div className="fixed top-6 right-6 z-50 max-w-sm w-full">
           <Toast
             message={toast.message}
             type={toast.type}
@@ -62,73 +66,94 @@ export function AuthPage() {
         </div>
       )}
 
-      <div className="w-full max-w-md">
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-2 text-2xl font-bold text-blue-600">
+      <div className="w-full max-w-md relative z-10 animate-scale-up">
+        {/* Brand Logo Header */}
+        <div className="flex flex-col items-center mb-8 text-center">
+          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 text-white shadow-glow mb-4 animate-bounce-slow">
             <Calendar className="w-8 h-8" />
-            EventManager
           </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5">
+            EventManager
+            <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+          </h1>
+          <p className="text-sm font-medium text-slate-500 mt-2">
+            La plataforma definitiva para tus eventos
+          </p>
         </div>
 
-        <Card className="shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+        {/* Auth Card */}
+        <Card glass={true} className="border-glass p-8 shadow-2xl relative">
+          <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center">
+            {isLogin ? "Iniciar Sesión" : "Crear una Cuenta"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
-              <>
-                <Input
-                  label="Nombre"
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  required
-                />
-                <Input
-                  label="Apellido"
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative">
+                  <Input
+                    label="Nombre"
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    placeholder="John"
+                    required
+                  />
+                </div>
+                <div>
+                  <Input
+                    label="Apellido"
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    placeholder="Doe"
+                    required
+                  />
+                </div>
+              </div>
             )}
 
-            <Input
-              label="Email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-            />
+            <div>
+              <Input
+                label="Correo Electrónico"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="ejemplo@correo.com"
+                required
+              />
+            </div>
 
-            <Input
-              label="Contraseña"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-            />
+            <div>
+              <Input
+                label="Contraseña"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
             <Button
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full"
+              className="w-full mt-2 py-3.5"
               isLoading={loading}
             >
-              {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+              {isLogin ? "Iniciar sesión" : "Comenzar registro"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 mb-2">
-              {isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}
+          {/* Footer switch state */}
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+            <p className="text-sm text-slate-500 mb-3">
+              {isLogin ? "¿Aún no tienes una cuenta?" : "¿Ya eres miembro de la plataforma?"}
             </p>
             <button
               onClick={() => {
@@ -140,9 +165,9 @@ export function AuthPage() {
                   password: "",
                 });
               }}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors inline-flex items-center gap-1 hover:underline"
             >
-              {isLogin ? "Registrarse" : "Iniciar sesión"}
+              {isLogin ? "Regístrate ahora" : "Inicia sesión aquí"}
             </button>
           </div>
         </Card>
