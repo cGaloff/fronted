@@ -2,13 +2,6 @@ import { Event, Registration, CheckInValidation, AttendanceReport, AuthResponse 
 
 const BASE_URL = "https://gestion-eventos-backend-g5-dae9gcbgggerhgb8.brazilsouth-01.azurewebsites.net/api";
 
-interface ApiResponse<T> {
-  data?: T;
-  message?: string;
-  errors?: Record<string, string[]>;
-  title?: string;
-  status?: number;
-}
 
 async function apiCall<T>(
   endpoint: string,
@@ -33,10 +26,40 @@ async function apiCall<T>(
     ...options,
     headers,
   });
-
   if (!response.ok) {
-    const error: ApiResponse<T> = await response.json().catch(() => ({}));
-    throw new Error(error.message || `API Error: ${response.status}`);
+    let errorMessage = `Error del servidor (${response.status})`;
+    try {
+      const errorData = await response.json();
+      if (errorData && typeof errorData === "object") {
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.errors && typeof errorData.errors === "object") {
+          const errorList = Object.entries(errorData.errors)
+            .map(([field, msgs]) => {
+              const fieldName = field ? `${field}: ` : "";
+              const messages = Array.isArray(msgs) ? msgs.join(" ") : String(msgs);
+              return `${fieldName}${messages}`;
+            });
+          if (errorList.length > 0) {
+            errorMessage = errorList.join(" | ");
+          } else {
+            errorMessage = errorData.title || errorMessage;
+          }
+        } else if (errorData.title) {
+          errorMessage = errorData.title;
+        }
+      }
+    } catch {
+      try {
+        const text = await response.clone().text();
+        if (text && text.length < 150) {
+          errorMessage = text;
+        }
+      } catch {
+        // Ignorar
+      }
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();

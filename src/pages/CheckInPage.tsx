@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { checkInAPI } from "../lib/api";
 import { Button } from "../components/ui/Button";
@@ -9,8 +9,12 @@ import { Toast } from "../components/ui/Toast";
 import { CheckCircle2, AlertTriangle, QrCode, Monitor, Sparkles, ChevronLeft, UserCheck } from "lucide-react";
 
 export function CheckInPage() {
-  const [token, setToken] = useState("");
-  const [eventId, setEventId] = useState("");
+  const [searchParams] = useSearchParams();
+  const queryToken = searchParams.get("token") || "";
+  const queryEventId = searchParams.get("eventId") || "";
+
+  const [token, setToken] = useState(queryToken);
+  const [eventId, setEventId] = useState(queryEventId);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(
@@ -19,6 +23,27 @@ export function CheckInPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Validación automática si se proveen ambos parámetros de consulta
+  useEffect(() => {
+    if (queryToken && queryEventId) {
+      const autoValidate = async () => {
+        try {
+          setLoading(true);
+          const data = await checkInAPI.validate({ token: queryToken, eventId: queryEventId });
+          setResult(data);
+          setToken("");
+          setEventId("");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Error en validación automática";
+          setToast({ message, type: "error" });
+        } finally {
+          setLoading(false);
+        }
+      };
+      autoValidate();
+    }
+  }, [queryToken, queryEventId]);
 
   const handleValidate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,25 +210,29 @@ export function CheckInPage() {
                 {result.message}
               </p>
 
-              {/* Detailed Grid card */}
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-7 space-y-3.5 text-left text-sm">
-                <div className="flex justify-between items-center pb-2.5 border-b border-slate-200/50">
-                  <span className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Participante</span>
-                  <span className="font-bold text-slate-800">{result.userFullName}</span>
-                </div>
-                
-                <div className="flex justify-between items-center pb-2.5 border-b border-slate-200/50">
-                  <span className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Nombre del Evento</span>
-                  <span className="font-bold text-slate-800 truncate max-w-[200px]">{result.eventName}</span>
-                </div>
+              {/* Detailed Grid card (only if participant details are returned) */}
+              {result.userFullName && (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-7 space-y-3.5 text-left text-sm animate-fade-in">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-200/50">
+                    <span className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Participante</span>
+                    <span className="font-bold text-slate-800">{result.userFullName}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-200/50">
+                    <span className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Nombre del Evento</span>
+                    <span className="font-bold text-slate-800 truncate max-w-[200px]">{result.eventName}</span>
+                  </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Registro de Entrada</span>
-                  <span className="font-mono text-xs font-bold text-slate-600">
-                    {new Date(result.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                  </span>
+                  {result.checkedInAt && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Registro de Entrada</span>
+                      <span className="font-mono text-xs font-bold text-slate-600">
+                        {new Date(result.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
               {/* Return to Scan Button */}
               <Button

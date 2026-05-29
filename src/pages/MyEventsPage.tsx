@@ -193,7 +193,7 @@ export function MyEventsPage() {
                   {/* Styled QR Frame */}
                   <div className="bg-white border border-slate-200/60 p-5 rounded-2xl shadow-sm relative group mb-6 hover:shadow-md transition-shadow">
                     <QRCode
-                      value={reg.eventId}
+                      value={`${window.location.origin}/check-in?token=${reg.checkInToken}&eventId=${reg.eventId}`}
                       size={140}
                       level="H"
                       includeMargin={false}

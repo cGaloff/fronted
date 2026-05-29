@@ -59,6 +59,7 @@ export interface RegistrationDetail {
   location: string;
   status: EventStatus;
   registeredAt: string;
+  checkInToken: string;
 }
 
 export interface CheckInValidation {
