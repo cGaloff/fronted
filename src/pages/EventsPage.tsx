@@ -6,7 +6,7 @@ import { Event, EventStatus, UserRole } from "../types";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Toast } from "../components/ui/Toast";
-import { Plus, MapPin, Clock, Search, LogOut, Ticket, BarChart3, Sparkles, CalendarDays } from "lucide-react";
+import { Plus, MapPin, Clock, Search, LogOut, Ticket, BarChart3, Sparkles, CalendarDays, Camera } from "lucide-react";
 
 export function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -66,9 +66,9 @@ export function EventsPage() {
   // Filter events based on search term and selected tab
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
-      event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (event.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.location || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.description || "").toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" ||
@@ -149,6 +149,15 @@ export function EventsPage() {
             >
               <Ticket className="w-4 h-4 text-indigo-500" />
               Mis Eventos
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/check-in?scan=true")}
+              className="flex items-center gap-2 px-5 py-3 border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/10 text-slate-700 font-semibold"
+            >
+              <Camera className="w-4.5 h-4.5 text-indigo-500" />
+              Check-in con Cámara
             </Button>
             {user?.role === UserRole.User && (
               <Button

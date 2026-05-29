@@ -6,7 +6,8 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card } from "../components/ui/Card";
 import { Toast } from "../components/ui/Toast";
-import { CheckCircle2, AlertTriangle, QrCode, Monitor, Sparkles, ChevronLeft, UserCheck } from "lucide-react";
+import { CheckCircle2, AlertTriangle, QrCode, Monitor, Sparkles, ChevronLeft, UserCheck, Camera, CameraOff } from "lucide-react";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 export function CheckInPage() {
   const [searchParams] = useSearchParams();
@@ -17,12 +18,72 @@ export function CheckInPage() {
   const [eventId, setEventId] = useState(queryEventId);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(
     null
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [showScanner, setShowScanner] = useState(searchParams.get("scan") === "true");
+
+  // Cámara Escáner QR en vivo
+  useEffect(() => {
+    let scanner: any = null;
+    if (showScanner) {
+      scanner = new Html5QrcodeScanner(
+        "reader",
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          showTorchButtonIfSupported: true
+        },
+        false
+      );
+
+      const onScanSuccess = async (decodedText: string) => {
+        try {
+          const url = new URL(decodedText);
+          const tokenParam = url.searchParams.get("token");
+          const eventIdParam = url.searchParams.get("eventId");
+
+          if (tokenParam && eventIdParam) {
+            setShowScanner(false);
+            setToken(tokenParam);
+            setEventId(eventIdParam);
+
+            setLoading(true);
+            const data = await checkInAPI.validate({ token: tokenParam, eventId: eventIdParam });
+            setResult(data);
+            setToken("");
+            setEventId("");
+          } else {
+            setToast({ message: "El código QR decodificado no pertenece al sistema de accesos.", type: "error" });
+          }
+        } catch {
+          if (decodedText.length > 20) {
+            setToken(decodedText);
+            setShowScanner(false);
+            setToast({ message: "Se detectó token manual. Por favor ingresa el ID del evento.", type: "info" });
+          } else {
+            setToast({ message: "Formato de código QR no reconocido.", type: "error" });
+          }
+        }
+      };
+
+      const onScanFailure = () => {
+        // Silencioso
+      };
+
+      scanner.render(onScanSuccess, onScanFailure);
+    }
+
+    return () => {
+      if (scanner) {
+        scanner.clear().catch((err: any) => console.error("Error al detener el escáner", err));
+      }
+    };
+  }, [showScanner]);
 
   // Validación automática si se proveen ambos parámetros de consulta
   useEffect(() => {
@@ -132,6 +193,36 @@ export function CheckInPage() {
         {/* Input Validation Form */}
         {!result && (
           <Card className="mb-8 p-8 border-glass shadow-2xl bg-white/95">
+            {/* Cámara Escáner de Código QR */}
+            <div className="mb-6 pb-6 border-b border-slate-100">
+              <Button
+                type="button"
+                variant={showScanner ? "danger" : "primary"}
+                onClick={() => setShowScanner(!showScanner)}
+                className="w-full py-3.5 font-bold flex items-center justify-center gap-2"
+              >
+                {showScanner ? (
+                  <>
+                    <CameraOff className="w-4.5 h-4.5" />
+                    Cerrar Cámara Escáner
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-4.5 h-4.5" />
+                    Abrir Cámara Escáner
+                  </>
+                )}
+              </Button>
+
+              {showScanner && (
+                <div className="mt-5 rounded-2xl overflow-hidden shadow-inner border border-slate-200/50 bg-slate-950 p-3.5 animate-scale-up relative">
+                  <div id="reader" className="w-full overflow-hidden rounded-xl"></div>
+                  {/* Láser de barrido decorativo */}
+                  <div className="absolute left-0 right-0 h-[2.5px] bg-emerald-500/50 shadow-[0_0_8px_#10b981] animate-scanner pointer-events-none"></div>
+                </div>
+              )}
+            </div>
+
             <form onSubmit={handleValidate} className="space-y-6">
               <Input
                 label="Token QR del Participante"
@@ -234,19 +325,34 @@ export function CheckInPage() {
                 </div>
               )}
 
-              {/* Return to Scan Button */}
-              <Button
-                variant={result.success ? "primary" : "secondary"}
-                onClick={() => {
-                  setResult(null);
-                  setTimeout(() => {
-                    if (inputRef.current) inputRef.current.focus();
-                  }, 100);
-                }}
-                className={`w-full py-3.5 font-bold text-sm ${result.success ? "shadow-glow-success bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700" : "border-slate-200"}`}
-              >
-                Escanear Siguiente Registro
-              </Button>
+              {/* Quick continuous actions */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setResult(null);
+                    setShowScanner(true);
+                  }}
+                  className="flex-1 py-3.5 font-bold text-sm flex items-center justify-center gap-2 shadow-glow bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0"
+                >
+                  <Camera className="w-4.5 h-4.5" />
+                  Escanear con Cámara
+                </Button>
+                
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setResult(null);
+                    setShowScanner(false);
+                    setTimeout(() => {
+                      if (inputRef.current) inputRef.current.focus();
+                    }, 100);
+                  }}
+                  className="flex-1 py-3.5 font-bold text-sm border-slate-200 hover:bg-slate-50 text-slate-700"
+                >
+                  Registro Manual
+                </Button>
+              </div>
             </div>
           </Card>
         )}
